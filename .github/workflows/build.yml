@@ -1,0 +1,42 @@
+name: Build Privado VPN Client (Windows)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Clean old builds
+        shell: pwsh
+        run: Remove-Item -Recurse -Force src\*.class -ErrorAction SilentlyContinue
+
+      - name: Compile Java source files
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem src -Filter *.java | ForEach-Object { $_.FullName }
+          javac $files
+
+      - name: Package JAR file
+        shell: pwsh
+        run: |
+          jar cfm PrivadoVPN.jar manifest.txt (Get-ChildItem src -Filter *.class | ForEach-Object { $_.FullName }) Privado.png
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrivadoVPN
+          path: PrivadoVPN.jar
